@@ -165,13 +165,13 @@ def DFS(Graph,Org):
 
         
 #Output of Limited_DFS will be used for application of DFID. 
-def Limited_DFS (Graph, Org,Limit):
 
+def Limited_DFS (Graph, Org,Limit, Print, pastExplored):
     exploredvertex = []
     array = []
     for x in range(len(Graph[0])):    #x for rows
         line = [] 
-        for y in range(len(Graph)):   #y for columns
+        for y in range(len(Graph)):   #y for column
             line.append(None)
         array.append(line)
     
@@ -180,7 +180,6 @@ def Limited_DFS (Graph, Org,Limit):
     node = Node(0,0)
     array[0][0] = node
     stk.append(node)
-
     temp = 0
 
     while (len(stk)) and temp == 0:
@@ -188,15 +187,22 @@ def Limited_DFS (Graph, Org,Limit):
         if Graph[node.y][node.x] == 2:
             goal = node
             temp=1
-        
-        for dx,dy in [(-1,0),(1,0),(0,-1),(0,1)]:
-            if Valid(node.y + dy, node.x + dx, len(Graph), len(Graph[0])):
-                if Graph[node.y+dy][node.x + dx] != 0 and (array[node.x+dx][node.y+dy] == None):
-                    newNode = Node(node.x+dx,node.y+dy, node)
-                    array[node.x+dx][node.y+dy] = newNode
-                    stk.append(newNode)                  
+            if (Print == False):
+                return True, len(exploredvertex)
+        if (node.Depth < Limit):
+            for dx,dy in [(-1,0),(1,0),(0,-1),(0,1)]:
+                if Valid(node.y + dy, node.x + dx, len(Graph), len(Graph[0])):
+                    if Graph[node.y+dy][node.x + dx] != 0 and (array[node.x+dx][node.y+dy] == None):
+
+                        newNode = Node(node.x+dx,node.y+dy, node, node.Depth+1)
+                        array[node.x+dx][node.y+dy] = newNode
+                       
+                        stk.append(newNode)                  
     
         exploredvertex.append(node)
+
+    if (Print == False):
+        return False, len(exploredvertex)
     
     current_Node = goal
     OutputPath = Org
@@ -207,6 +213,25 @@ def Limited_DFS (Graph, Org,Limit):
         PathLength += 1
 
     OutputPath[current_Node.y][current_Node.x] = 0
+
+    print(pastExplored)
+    print(PathLength)    
+    for row in OutputPath:
+        for char in row:
+            print(char,end="")   
+
+        print("")    
+
+def DFID(Graph,Org):
+    Limit = 1
+    success = False
+    pastExplored = 0
+    explored = 0
+    while (success==False):
+        Limit += 1
+        success, explored = Limited_DFS(Graph, Org, Limit, False, pastExplored)
+        pastExplored += explored
+    Limited_DFS(Graph, Org, Limit, True, pastExplored)
     
 
 #The Main function of the code.
@@ -225,5 +250,5 @@ if (__name__ == "__main__"):
         BFS(graphMaze,originalMaze)
     elif number_for_running == 1:
         DFS(graphMaze,originalMaze)
-    # elif number_for_running == 2:
-    #     DFID(graphMaze,originalMaze)
+    elif number_for_running == 2:
+        DFID(graphMaze,originalMaze)
