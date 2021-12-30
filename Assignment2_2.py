@@ -1,42 +1,50 @@
 import sys
+from queue import PriorityQueue
 
-Stack_1       #Stack for the input
-Stack_2       #Stack for the output
-Stack_3
-
-OPEN_list[]                 #Open list to store values of state and check the order of heuristic function's values
-CLOSED_list[]               #Closed List to store the state with lowest value of heuristic function
-
-BlockCluster[]       #array to store the inputstack completely in it.
+# Initializing Stacks for storing input
 
 class Blocks:
     def __init__(self, label):
         self.label = label
         self.goalState = None
         self.goallevel = None
+    
+    def __init__(self,stack1,stack2,stack3,parent=None,heuristic_function=None):
+        self.stack1 = stack1
+        self.stack2 = stack2
+        self.stack3 = stack3
+        self.parent = parent
+        self.heuristic_function = heuristic_function
 
 
-def Best_First_Search(current_state):
-
-    OPEN_list.append(current_state)
-
-    if(len(OPEN_list) == print("OPEN list is empty")
-
-    else:
-        Heuristic_Function(current_state)
-
-def Heuristic_Function(test_state):
-    hn =  #function to calculate the heuristic
-    array_for_h_values.append(hn)
 
 
-if (__name__ == "__main__")
+def GoalTest(current_state,goal_state):
+    
+    # Comapring the current state with the goal state
+
+    if current_state.stack1 != goal_state.stack1:
+        return False
+
+    if current_state.stack2 != goal_state.stack2:
+        return False
+
+    if current_state.stack3 != goal_state.stack3:
+        return False
+       
+    return True
+
+
+#Main Function for input of file and output of the result.
+
+
+if (__name__ == "__main__"):
 
     if (len(sys.argv)==2):
         filename = sys.argv[1]
 
-        file = open(filename,'r')
-        data.file.readlines()   #reading lines from the file an dstoring it in variable named data
+        file = open(filename,"r")     #Opening the specified file
+        data.file.readlines()         #reading lines from the file and storing it in variable named data
 
         for line in file:
             for char in line:
@@ -44,9 +52,9 @@ if (__name__ == "__main__")
                     break
 
                 if char in Stack_1:
-                    Stack_2.append(char)
+                    Stack2.append(char)
                 if char != '\n':
-                    Stack_1.append(char)
+                    Stack1.append(char)
 
     else:
         print("Error in file input: ")
