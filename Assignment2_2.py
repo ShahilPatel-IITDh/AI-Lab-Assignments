@@ -1,230 +1,273 @@
 import sys
 from queue import PriorityQueue
 import copy
+import time
 
-data=[]
+class Blocks:
 
-# Initializing Stacks for storing input
-
-class Blocks:                   #Class Blocks to store the goal state, goal level.
-    def __init__(self, label):
-        self.label = label
-        self.goal_state = None
-        self.goal_level = None
-    
-    def __init__(self,stack1,stack2,stack3,parent=None,heuristic_function=None):    #To store stacks, its parent state and value of heuristic_function 
-        self.stack1 = stack1
-        self.stack2 = stack2
-        self.stack3 = stack3
+    def __init__(self,s1,s2,s3,parent = None, heuristic = None):
+        self.s1 = s1
+        self.s2 = s2
+        self.s3 = s3
         self.parent = parent
-        self.heuristic_function = heuristic_function
+        self.heuristic = heuristic
 
+    def stack_set(self):
+        return [self.s1,self.s2,self.s3]
 
-    def allstack(self):
-        return [self.stack1,self.stack2,self.stack3]
+    #print  function
 
     def Print(self):
-        print(self.stack1)
-        print(self.stack2)
-        print(self.stack3)
 
+        print(self.s1)
+        print(self.s2)
+        print(self.s3)
 
-#Function for moving the through different states
+    def __eq__(self, Temp):
+       
+        if not isinstance(Temp, Blocks):
+            return NotImplemented
+
+        return self.s1 == Temp.s1 and self.s2 == Temp.s2 and self.s3 == Temp.s3
+
+    def __lt__(self, Temp):
+        return None
+
+#Move Gen Function for state transition
 
 def MoveGen(current_state):
-    Next=[]        #Array to store the states after the various transitions
 
-
-    if current_state.stack1:            #if the current state is in the stack 1
-
-        #Adding the top element of stack 1 to stack 2
-
-        replica_state = copy.deepcopy(current_state)      # creating the newstate as replica of current_state
-        top = replica_state.stack1.pop()    #remove top element from stack 1
-        replica_state.stack2.append(top)    
-        Next.append(replica_state)       
-
-        #Adding the top element of stack 1 to stack 3
-
-        replica_state = copy.deepcopy(current_state)
-        top = replica_state.stack1.pop()
-        replica_state.stack3.append(top)
-        Next.append(replica_state)
-
-
-    if current_state.stack2:         #if the current state is in the stack2
-
-        #Adding the top element of stack 2 to stack 1
-
-        replica_state = copy.deepcopy(current_state)
-        top = replica_state.stack2.pop()
-        replica_state.stack1.append(top)
-        Next.append(replica_state)
-
-        #Adding the top element of stack 2 to stack 3
-
-        replica_state = copy.deepcopy(current_state)
-        top = replica_state.stack2.pop()
-        replica_state.stack3.append(top)
-        Next.append(replica_state)
-
-
-    if current_state.stack3:        #if the current state is in the state 3
-
-        #Adding the top element of stack 3 to stack 1
-
-        replica_state = copy.deepcopy(current_state)
-        top = replica_state.stack3.pop()
-        replica_state.stack1.append(top)
-        Next.append(replica_state)
-
-        #Adding the top element of stack 3 to stack 2
-
-        new_state = copy.deepcopy(current_state)
-        top = replica_state.stack3.pop()
-        replica_state.stack2.append(top)
-        Next.append(replica_state)
-    
-    
-    return Next        #returning the array we used to store the states after the transitions i.e. replica states  
-
-
-#Function for Goal testing
-
-def GoalTest(current_state,goal_state):
-
-    # Comparing the current state with the goal state
-
-    if current_state.stack1 != goal_state.stack1:
-        return False
-
-    if current_state.stack2 != goal_state.stack2:
-        return False
-
-    if current_state.stack3 != goal_state.stack3:
-        return False
+    neighbors=[]
+   
+    if current_state.s1:        #if current state is in s1
+        new_state = copy.deepcopy(current_state) 
+        temp = new_state.s1.pop()    
+        new_state.s2.append(temp)    
+        neighbors.append(new_state)    
        
+        new_state = copy.deepcopy(current_state)
+        temp = new_state.s1.pop()
+        new_state.s3.append(temp)
+        neighbors.append(new_state)
+    
+    if current_state.s2:        #if current state is in s2 
+        new_state = copy.deepcopy(current_state)
+        temp = new_state.s2.pop()
+        new_state.s1.append(temp)
+        neighbors.append(new_state)
+      
+        new_state = copy.deepcopy(current_state)
+        temp = new_state.s2.pop()
+        new_state.s3.append(temp)
+        neighbors.append(new_state)
+    
+    if current_state.s3:
+        new_state = copy.deepcopy(current_state)
+        temp = new_state.s3.pop()
+        new_state.s1.append(temp)
+        neighbors.append(new_state)
+       
+        new_state = copy.deepcopy(current_state)
+        temp = new_state.s3.pop()
+        new_state.s2.append(temp)
+        neighbors.append(new_state)
+    
+    return neighbors
+
+
+#Goal Test function
+def GoalTest(current_state,goal_state):
+    
+    if current_state.s1 != goal_state.s1:
+        return False
+    
+    if current_state.s2 != goal_state.s2:
+        return False
+    
+    if current_state.s3 != goal_state.s3:
+        return False
+
     return True
 
+def Heuristic_S1(current_state,goal_state):    #Heuristic for stack 1
+    h = 0                 
+    
+    for stack, goal_stack in zip(current_state.stack_set(),goal_state.stack_set()):
+        
+        for block in stack: 
+            goal_index = None
+            
+            try:
+                goal_index = goal_stack.index(block)    #index of goal stack
+                index = stack.index(block)              #index of stack
+                if index == 0 and goal_index==0: 
+                    h+=1
+               
+                elif index-1>=0 and stack[index-1] == goal_stack[goal_index-1]: 
+                    h+=1
+                
+                else:
+                    h-=1
+            
+            except:
+                h-=1
+    return h
 
-#def heuristic_function
+def Heuristic_S2(current_state,goal_state):     #heuristic for stack 2
+    h = 0 
+
+    for stack, goal_stack in zip(current_state.stack_set(),goal_state.stack_set()):
+        
+        index = 0
+        test = False
+        
+        for block in stack:
+            try:            #if the goal state has a block
+                g = goal_stack[index]
+           
+            except:         #if goal state has no block
+                g = None
+           
+            if test == True:    
+                h-=1*(index+1)
+           
+            elif block == g and test!=True:     #if on correct structure
+                h+=1*(index+1)
+            
+            else: 
+                h-=1*(index+1)
+                test = True
+            index+=1
+    return h
 
 
-def NotVisited(state,visited,opened):
+def Heuristic_S3(state,goal_state):    #Heuristic for stack 3
+    
+    h = 0  
+    
+    for stack, goal_stack in zip(state.stack_set(),goal_state.stack_set()):#parallel loop through state and goal state stacks of block
+        index = 0
+        test = False
+        for block in stack:
+           
+            try:# if a goal stack have  block
+                g = goal_stack[index]
+            
+            except:# if a goal stack does not have block
+                g = None
+            
+            if test == True:#if structure below is incorrect
+                h-=1*(len(stack)-index)
+            
+            elif block == g and test!=True:#if on correct structure
+                h+=1*(len(stack)-index)
+            
+            else:#if on incorrect structure
+                h-=1*(len(stack)-index)
+                test = True
+            index+=1
+    return h
 
-    for check_state in visited:    #check whether the state is in visited list.
-        if (check_state.stack1 == state.stack1) and (check_state.stack2 == state.stack2) and (check_state.stack3 == state.stack3):
+
+def Not_Explored(current_state,explored,open):
+    
+    for s in explored:# check in explored
+        if s.s1 == current_state.s1 and s.s2 == current_state.s2 and s.s3 == current_state.s3:
+            return False
+    
+    for (h,s) in open:# check in open
+        if s.s1 == current_state.s1 and s.s2 == current_state.s2 and s.s3 == current_state.s3:
             return False
 
-    for (h,check_state) in opened:          #check whether the state is in opened list
-        if (check_state.stack1 == state.stack1) and (check_state.stack2 == state.stack2) and (check_state.stack3 == state.stack3):
-            return False
-    return True                    #return true if not the state is not already visited
+    return True         # return true if the state is not explored
 
 
-#Function for tracing the path 
+
+#Function for Path tracking
 
 def Track_Path(path,state):
     
     path.append(state)
-
-    if state.parent == None:              #return the track if we reach the initial state
+    
+    if state.parent == None:        #base case
         return
-
     else:
-        Track_Path(path,state.parent)     #Recursively track the path 
+        Track_Path(path,state.parent)  # find path recursively
 
 
+#Best_First_Search
 
-
-# def Best_First_Search(initial_state, goal_state):
-
-def Best_First_Search(initial_state,goal_state):#best first search
+def Best_First_Search(initial_state,goal_state):
     
-    q = PriorityQueue()             #q is a PriorityQueue
-    explored=[]                     # to store visited states
-
-    #Assign heuristic value to h
-    h = (Heuristic_S3(goal_state,goal_state) - Heuristic_S3(initial_state,goal_state)) # difference between start and goal state
+    open = PriorityQueue()
+    explored=[]                     #array to store the explored states
+    h = Heuristic_S3(goal_state,goal_state) - Heuristic_S3(initial_state,goal_state)
+    open.put((h,initial_state))
     
-    q.put((h,initial_state))
-
-    while not q.empty():
-
-        h,state = q.get()            # get head / 1st element from priority queue
+    while not open.empty():
+        h,state = open.get() # get head element from priority queue
         explored.append(state)
-        if GoalTest(state,goal_state):    # check for goal state
-            
+        
+        if GoalTest(state,goal_state):# check for goal state
             path=[]
-
-            Track_Path(path,state)   #call to Tracing function to trace the
-
-            output.write("States in the path are: "+str(len(path))+"\n")
-            output.write("Explored states are: "+str(len(explored))+"\n")
-
+            Track_Path(path,state)
+            output.write("States present in path: "+str(len(path))+"\n")
+            output.write("Explored states:  "+str(len(explored))+"\n")
+            
             for i in reversed(path):
-                for s in i.allstack():
+                for s in i.stack_set():
                     output.write(str(s)+"\n")
                 output.write("\n")
             return True
-
-        for Next in MoveGen(state):                   #find next states
-            if NotVisited(Next,explored,q.queue):
-                h = (Heuristic_S3(goal_state,goal_state) - Heuristic_S3(Next,goal_state))
-                Next.parent = state                 # set parent for next to check for parent state 
-                q.put((h,Next))
+        
+        for neighbor in MoveGen(state):
+            if Not_Explored(neighbor,explored,open.queue):
+                h = Heuristic_S3(goal_state,goal_state)-Heuristic_S3(neighbor,goal_state)
+                neighbor.parent = state         # set parent
+                open.put((h,neighbor))
     return False
 
 
-#function to implement hill climb algorithm
-
-def Hill_Climb(initial_state,goal_state):          #Hill climbing search
+def Hill_Climb(initial_state,goal_state):     #Hill Climbing search
     
     next_state=[]
-    
-    h = (Heuristic_S3(goal_state,goal_state) - Heuristic_S3(initial_state,goal_state))
-    
+    h = Heuristic_S3(goal_state,goal_state)-Heuristic_S3(initial_state,goal_state)      #calculate heuristics
     initial_state.heuristic = h
-
     next_state.append(initial_state)
-
-    local_maxima = 0     #initialize the local maxima variable with 0
-
+    local_maxima = False
+    
     while not local_maxima:
-
         state = next_state[-1]
-        if GoalTest(state,goal_state):          # check for goal state
-            
+       
+        if GoalTest(state,goal_state):  # check for goal state
             path=[]
             Track_Path(path,state)
-            
-            output.write("States in the path are: "+str(len(path))+"\n")
-            output.write("Explored states are: "+str(len(next_state))+"\n")
-            
+            output.write("States present in path: "+str(len(path))+"\n")
+            output.write("Explored states: "+str(len(next_state))+"\n")
+           
             for i in reversed(path):
                 for s in i.allstack():
                     output.write(str(s)+"\n")
                 output.write("\n")
             return True
-
-        min = state   #store the state in min variable
-
-        for Next in MoveGen(state):             # find next states     
-            h = (Heuristic_S3(goal_state,goal_state)-Heuristic_S3(Next,goal_state))
-            Next.parent = state
-            Next.heuristic = h
-           
-            if (Next.heuristic < min.heuristic):
-                min = Next
+        min = state
         
-        next_state.append(min)         #set minimum heuristic valued state
+        for neighbor in MoveGen(state):
+            h = Heuristic_S3(goal_state,goal_state)-Heuristic_S3(neighbor,goal_state)
+            neighbor.parent = state
+            neighbor.heuristic = h
+            if neighbor.heuristic < min.heuristic:
+                min = neighbor
+        next_state.append(min)    #it is minimum heuristic value of the stack 
         if min == state:
-            local_maxima = 1           #we are stuck at local maxima now
+            local_maxima = True
     
     path=[]
-    Track_Path(path,state)          # get path travelled if stuck on local maxima
-    output.write("States in the path are: "+str(len(path))+"\n")
-    output.write("Explored states are: "+str(len(next_state))+"\n")
+
+    Track_Path(path,state)                 # get path which is expored if the transition is stuck on local maxima
+    
+    output.write("States present in path: "+str(len(path))+"\n")
+    output.write("Explored states: "+str(len(next_state))+"\n")
     
     for i in reversed(path):
         for s in i.allstack():
@@ -233,103 +276,34 @@ def Hill_Climb(initial_state,goal_state):          #Hill climbing search
     output.write("stuck in local maxima")
     return False
 
-
-#Heuristic functions 
-def Heuristic_S1(state,goal_state):
-    h = 0 #initialize heuristic
-    for stack, goal_stack in zip(state.allstack(),goal_state.allstack()):#parallel loop through state and goal state stacks of block
-        for block in stack: # loop through inside a stack
-            index_in_goal = None
-            try:
-                index_in_goal = goal_stack.index(block) # find index of block in goal stack
-                index = stack.index(block) # find index of block in current stack
-                if index == 0 and index_in_goal==0: #boundary case if they are on table
-                    h+=1
-                elif index-1>=0 and stack[index-1] == goal_stack[index_in_goal-1]: #if theu are correctly on top of block
-                    h+=1
-                else:
-                    h-=1
-            except: # if a goal stack does not have that block
-                h-=1
-    return h
-
-def Heuristic_S2(state,goal_state):
-    h = 0 #initialize heuristic
-    for stack, goal_stack in zip(state.allstack(),goal_state.allstack()):#parallel loop through state and goal state stacks of block
-        index = 0
-        flag = False
-        for block in stack:
-            try:# if a goal stack have  block
-                g = goal_stack[index]
-            except:# if a goal stack does not have block
-                g = None
-            if flag == True:#if structure below is incorrect
-                h-=1*(index+1)
-            elif block == g and flag!=True:#if on correct structure
-                h+=1*(index+1)
-            else: #if on incorrect structure
-                h-=1*(index+1)
-                flag = True
-            index+=1
-    return h
-
-def Heuristic_S3(state,goal_state):
-    h = 0  #initialize heuristic
-    for stack, goal_stack in zip(state.allstack(),goal_state.allstack()):#parallel loop through state and goal state stacks of block
-        index = 0
-        flag = False
-        for block in stack:
-            try:# if a goal stack have  block
-                g = goal_stack[index]
-            except:# if a goal stack does not have block
-                g = None
-            if flag == True:#if structure below is incorrect
-                h-=1*(len(stack)-index)
-            elif block == g and flag!=True:#if on correct structure
-                h+=1*(len(stack)-index)
-            else:#if on incorrect structure
-                h-=1*(len(stack)-index)
-                flag = True
-            index+=1
-    return h
-
-
-
-if (__name__ == "__main__"):
-
-    if(len(sys.argv) == 2):
-        filename = sys.argv[1]
     
-    else:
-        print("Error in file input: ")
-        exit(1)
 
 
-    i = 1
-    for line in filename:                  #input in file for mace
-        if(i==1):
-            file_code = int(line)          #checking condition for Best First Search or Hill Climb
-            i=0
-    
-    stack1 = list(filename.readline().strip().split())
-    stack2 = list(filename.readline().strip().split())
-    stack3 = list(filename.readline().strip().split())
+filename = open(sys.argv[1], "r")
 
-    initial_state = Blocks(stack1,stack2,stack3)    #the order given in the file is assigned as the initial state
+file_code = filename.readline().strip()    #1 for BFS and 2 for Hill Climb
 
-    # stack1 = list(filename.readline().strip().split())
-    # stack2 = list(filename.readline().strip().split())
-    # stack3 = list(filename.readline().strip().split())
+stack1 = list(filename.readline().strip().split())
+stack2 = list(filename.readline().strip().split())
+stack3 = list(filename.readline().strip().split())
 
-    goal_state = Blocks(stack1,stack2,stack3)
+initial_state = Blocks(stack1,stack2,stack3)
 
-    output = open("output.txt", "w+")
+stack1 = list(filename.readline().strip().split())
+stack2 = list(filename.readline().strip().split())
+stack3 = list(filename.readline().strip().split())
 
-    if file_code =='1':
-        Best_First_Search(initial_state,goal_state)
-        print("1")
+goal_state = Blocks(stack1,stack2,stack3)
 
-    elif file_code=='2':
-        Hill_Climb(initial_state,goal_state)
-        print("2")
+output = open("output.txt", "w+")
 
+
+if file_code=='1':
+    time_stamp = time.time()
+    Best_First_Search(initial_state,goal_state)
+    print("Time taken for Best First Search: ",time.time() - time_stamp)
+
+elif file_code=='2':
+    time_stamp = time.time()
+    Hill_Climb(initial_state,goal_state)
+    print("Time taken for Hill Climb ALgorithm: ",time.time() - time_stamp)
