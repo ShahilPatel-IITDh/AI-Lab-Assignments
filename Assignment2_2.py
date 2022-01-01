@@ -76,6 +76,7 @@ def MoveGen(current_state):
 
 
 #Goal Test function
+
 def GoalTest(current_state,goal_state):
     
     if current_state.s1 != goal_state.s1:
@@ -89,21 +90,28 @@ def GoalTest(current_state,goal_state):
 
     return True
 
+#Heuristic functions
+
 def Heuristic_S1(current_state,goal_state):    #Heuristic for stack 1
     h = 0                 
     
-    for stack, goal_stack in zip(current_state.stack_set(),goal_state.stack_set()):
+    for stack, goal_stack in zip(current_state.stack_set(),goal_state.stack_set()):   #initializing a for loop for current state in the object set of state for goal state and current state        
         
-        for block in stack: 
-            goal_index = None
+        for block in stack:      #for loop within the stack (from previous for loop)
             
-            try:
-                goal_index = goal_stack.index(block)    #index of goal stack
+            g_index = None
+            
+            try:        #try and except for exception handling , minimizing the error
+
+                #try statement run when the conditions are pre-defined
+
+                g_index = goal_stack.index(block)       #index of goal stack
                 index = stack.index(block)              #index of stack
-                if index == 0 and goal_index==0: 
+                
+                if index == 0 and g_index==0: 
                     h+=1
                
-                elif index-1>=0 and stack[index-1] == goal_stack[goal_index-1]: 
+                elif index-1>=0 and stack[index-1] == goal_stack[g_index-1]: 
                     h+=1
                 
                 else:
@@ -114,29 +122,32 @@ def Heuristic_S1(current_state,goal_state):    #Heuristic for stack 1
     return h
 
 def Heuristic_S2(current_state,goal_state):     #heuristic for stack 2
-    h = 0 
+    
+    h = 0  
 
     for stack, goal_stack in zip(current_state.stack_set(),goal_state.stack_set()):
         
         index = 0
-        test = False
+        test = 0
         
         for block in stack:
+           
             try:            #if the goal state has a block
                 g = goal_stack[index]
            
             except:         #if goal state has no block
                 g = None
            
-            if test == True:    
+            
+            if test == 1:    
                 h-=1*(index+1)
            
-            elif block == g and test!=True:     #if on correct structure
+            elif block == g and test!=1:     #if on correct structure
                 h+=1*(index+1)
             
             else: 
                 h-=1*(index+1)
-                test = True
+                test = 1
             index+=1
     return h
 
@@ -146,8 +157,10 @@ def Heuristic_S3(state,goal_state):    #Heuristic for stack 3
     h = 0  
     
     for stack, goal_stack in zip(state.stack_set(),goal_state.stack_set()):#parallel loop through state and goal state stacks of block
+        
         index = 0
-        test = False
+        test = 0
+        
         for block in stack:
            
             try:# if a goal stack have  block
@@ -156,7 +169,7 @@ def Heuristic_S3(state,goal_state):    #Heuristic for stack 3
             except:# if a goal stack does not have block
                 g = None
             
-            if test == True:#if structure below is incorrect
+            if test == 1:#if structure below is incorrect
                 h-=1*(len(stack)-index)
             
             elif block == g and test!=True:#if on correct structure
@@ -164,19 +177,19 @@ def Heuristic_S3(state,goal_state):    #Heuristic for stack 3
             
             else:#if on incorrect structure
                 h-=1*(len(stack)-index)
-                test = True
+                test = 1
             index+=1
     return h
 
 
 def Not_Explored(current_state,explored,open):
     
-    for s in explored:# check in explored
-        if s.s1 == current_state.s1 and s.s2 == current_state.s2 and s.s3 == current_state.s3:
+    for i in explored:# check in explored
+        if i.s1 == current_state.s1 and i.s2 == current_state.s2 and i.s3 == current_state.s3:
             return False
     
-    for (h,s) in open:# check in open
-        if s.s1 == current_state.s1 and s.s2 == current_state.s2 and s.s3 == current_state.s3:
+    for (h,i) in open:# check in open
+        if i.s1 == current_state.s1 and i.s2 == current_state.s2 and i.s3 == current_state.s3:
             return False
 
     return True         # return true if the state is not explored
@@ -199,13 +212,14 @@ def Track_Path(path,state):
 
 def Best_First_Search(initial_state,goal_state):
     
-    open = PriorityQueue()
+    Qu = PriorityQueue()
     explored=[]                     #array to store the explored states
-    h = Heuristic_S3(goal_state,goal_state) - Heuristic_S3(initial_state,goal_state)
-    open.put((h,initial_state))
+    h = (Heuristic_S3(goal_state,goal_state) - Heuristic_S3(initial_state,goal_state))
+   
+    Qu.put((h,initial_state))
     
-    while not open.empty():
-        h,state = open.get() # get head element from priority queue
+    while not Qu.empty():
+        h,state = Qu.get()     # get head element from priority queue
         explored.append(state)
         
         if GoalTest(state,goal_state):# check for goal state
@@ -215,28 +229,32 @@ def Best_First_Search(initial_state,goal_state):
             output.write("Explored states:  "+str(len(explored))+"\n")
             
             for i in reversed(path):
-                for s in i.stack_set():
-                    output.write(str(s)+"\n")
+                for j in i.stack_set():
+                    output.write(str(j)+"\n")
                 output.write("\n")
             return True
         
         for neighbor in MoveGen(state):
-            if Not_Explored(neighbor,explored,open.queue):
-                h = Heuristic_S3(goal_state,goal_state)-Heuristic_S3(neighbor,goal_state)
+            if Not_Explored(neighbor,explored,Qu.queue):
+                h = (Heuristic_S3(goal_state,goal_state)-Heuristic_S3(neighbor,goal_state))
                 neighbor.parent = state         # set parent
-                open.put((h,neighbor))
+                Qu.put((h,neighbor))
     return False
 
 
 def Hill_Climb(initial_state,goal_state):     #Hill Climbing search
     
     next_state=[]
-    h = Heuristic_S3(goal_state,goal_state)-Heuristic_S3(initial_state,goal_state)      #calculate heuristics
-    initial_state.heuristic = h
-    next_state.append(initial_state)
-    local_maxima = False
+    h = (Heuristic_S3(goal_state,goal_state)-Heuristic_S3(initial_state,goal_state))      #calculate heuristics
     
-    while not local_maxima:
+    initial_state.heuristic = h
+   
+    next_state.append(initial_state)
+   
+    local_maxima = 0          #Variable to check whether the state reached local maxima or not 
+    
+    while (local_maxima == 0):
+        
         state = next_state[-1]
        
         if GoalTest(state,goal_state):  # check for goal state
@@ -246,21 +264,22 @@ def Hill_Climb(initial_state,goal_state):     #Hill Climbing search
             output.write("Explored states: "+str(len(next_state))+"\n")
            
             for i in reversed(path):
-                for s in i.allstack():
-                    output.write(str(s)+"\n")
+                for j in i.allstack():
+                    output.write(str(j)+"\n")
                 output.write("\n")
             return True
         min = state
-        
+
         for neighbor in MoveGen(state):
-            h = Heuristic_S3(goal_state,goal_state)-Heuristic_S3(neighbor,goal_state)
+            h = (Heuristic_S3(goal_state,goal_state)-Heuristic_S3(neighbor,goal_state))
             neighbor.parent = state
             neighbor.heuristic = h
             if neighbor.heuristic < min.heuristic:
                 min = neighbor
-        next_state.append(min)    #it is minimum heuristic value of the stack 
+        next_state.append(min)          #it is minimum heuristic value of the stack 
+       
         if min == state:
-            local_maxima = True
+            local_maxima = 1
     
     path=[]
 
@@ -270,16 +289,16 @@ def Hill_Climb(initial_state,goal_state):     #Hill Climbing search
     output.write("Explored states: "+str(len(next_state))+"\n")
     
     for i in reversed(path):
-        for s in i.allstack():
-            output.write(str(s)+"\n")
+        for j in i.allstack():
+            output.write(str(j)+"\n")
         output.write("\n")
-    output.write("stuck in local maxima")
+    output.write("The state is stuck in local maxima")
     return False
 
     
 
 
-filename = open(sys.argv[1], "r")
+filename = open(sys.argv[1], "r")       #opening file in read mode
 
 file_code = filename.readline().strip()    #1 for BFS and 2 for Hill Climb
 
