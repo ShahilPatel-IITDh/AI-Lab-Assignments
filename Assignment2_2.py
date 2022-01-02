@@ -111,7 +111,7 @@ def Heuristic_S1(current_state,goal_state):    #Heuristic for stack 1
                 if index == 0 and g_index==0: 
                     h+=1
                
-                elif index-1>=0 and stack[index-1] == goal_stack[g_index-1]: 
+                elif index>=1 and stack[index-1] == goal_stack[g_index-1]: 
                     h+=1
                 
                 else:
@@ -289,7 +289,7 @@ def Hill_Climb(initial_state,goal_state):     #Hill Climbing search
     output.write("Explored states: "+str(len(next_state))+"\n")
     
     for i in reversed(path):
-        for j in i.allstack():
+        for j in i.stack_set():
             output.write(str(j)+"\n")
         output.write("\n")
     output.write("The state is stuck in local maxima")
