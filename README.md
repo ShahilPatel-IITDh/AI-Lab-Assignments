@@ -1,2 +1,2 @@
 # AI-Lab-Assignments
-Solution code for Assignments in AI Lab
+Solution codes for Assignments in AI Lab
