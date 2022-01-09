@@ -1,6 +1,6 @@
 import sys
-import copy
 import random
+import copy
 from collections import Counter
 from itertools import combinations
 import operator
@@ -14,24 +14,21 @@ class Stage:
         self.heuristic = heuristic
         self.storage = storage
 
-    def __eq__(self, other):       #it is used specially to compare the positions of stages and it will be called when the program finds '==' sign
+    def __eq__(self, other):
         if not isinstance(other, Stage):
             return NotImplemented
+        
+        return self.positions == other.positions
 
-        return self.positions == other.positions      #if the position of object is equal to the other stage's position 
-      
-
-# Vector in senior = positions in our assignment
-
-def negative(literal):
-
+def Inverter(literal):
+    
     if literal == 'a':
         return '~a'
 
     elif literal == '~a':
         return 'a'
 
-    elif literal == 'b':
+    elif literal == 'b':   
         return '~b'
 
     elif literal == '~b':
@@ -49,165 +46,313 @@ def negative(literal):
     elif literal == 'd':
         return '~d'
 
-
 def tautology(clause):
-
+   
     for literal in clause:
-
-        if negative(literal) in clause:     #if negation of any literal is present in clause then it is tautology
-            return True
-
-        return False
+        if Inverter(literal) in clause: #if negation of any literal is present then it is tautology
+            return 1
+    
+    return 0
 
 def repetition(clause):
-    
-    for i in formula:
-        if Counter(clause) == Counter(i):   #check whether the formula is repeated or not
-            return True
+   
+    for f in formulas:
+        if Counter(clause) == Counter(f): #check if this clause is already present in the formula
+            return 1
+    return 0
 
-    return False
-
-def inverter(value):    #function to invert the value of given bit
-    
-    if value == 0:
-        return 1
-    else:
+def invert(bit):
+    if bit == 1:
         return 0
+    else:
+        return 1
 
-
-def getDirections(positions):      # map the literals to its value
+def Mapper(positions):  # map the literals to its value
     
-    dict = {}                    #creation of a dictionary named dict
-    
+    dict = {}      #initialize empty dictionary
+   
     dict['a'] = positions[0]
-    dict['~a'] = inverter(positions[0])
-
+    dict['~a'] = invert(positions[0])
+    
     dict['b'] = positions[1]
-    dict['~b'] = inverter(positions[1])
-
+    dict['~b'] = invert(positions[1])
+    
     dict['c'] = positions[2]
-    dict['~c'] = inverter(positions[2])
-
+    dict['~c'] = invert(positions[2])
+    
     dict['d'] = positions[3]
-    dict['~d'] = inverter(positions[3])
-
+    dict['~d'] = invert(positions[3])
+    
     return dict
 
-def heuristic_calc(stage):
+def heuristic_calc(state): # heuristic for number of clauses satisfied
+    
+    dict = Mapper(state.positions)
+    result = 0
+    
+    for clause in formulas:
+        result += dict[clause[0]] or dict[clause[1]] or dict[clause[2]]
+    
+    return result
 
-    dict = getDirections(stage.positions)
-    answer=0
-
-    for a in formula:    #Variable a represent clause
-        answer += dict[a[0]] or dict[a[1]] or dict[a[2]]
-        
-    return answer
+def Goal_Test(state):
+    
+    if state.heuristic == clauses: # goal state when heuristic is equal to number of clauses
+        return 1
+    return 0
 
 
-def Goal_Test(stage):
-    if stage.heuristic == clause:    #goal state is achieved when the heuristic is equal to no. of clause
-        return True
-    return False
-
-def MoveGen(current_stage,r,tt=None):
+def Move_Gen(node,r,tt=None):
+   
     if tt:
-        neighbor = []
+        neighbor_list = []
         indices = [0,1,2,3]
-        comb = combinations(indices,r)   #choose r from the list of indices
+        comb = combinations(indices,r) 
+        
         for c in list(comb):
-            new_stage = copy.deepcopy(current_stage)    #create a new state such that it is coppy of current stage
+            new_state = copy.deepcopy(node) # create a copy as new_state
+        
             for index in c:
-                
-                if new_stage.storage[index] == 0:  #invert if the storage is empty
-                    new_stage.positions[index] = inverter(new_stage.positions[index]) # invert that chosen bit
-                    new_stage.storage[index] = tt # set the tt value in memory
+                if new_state.storage[index] == 0: # only invert if memory value is zero
+                    new_state.positions[index] = invert(new_state.positions[index]) # invert that choosen bit
+                    new_state.storage[index] = tt # set the tt value in memory
+        
                     for i in [item for item in indices if item not in [index]]:
-                        new_stage.memory[i] = max(0,new_stage.memory[i]-1)  # decrease other tt value in memory
-                    neighbor.append(new_stage)
-        return neighbor
+                        new_state.storage[i] = max(0,new_state.storage[i]-1) # decrease other tt value in memory
+                    neighbor_list.append(new_state)
+        
+        return neighbor_list
 
     neighbor_list = []
     indices = [0,1,2,3]
-    comb = combinations(indices,r)          # choose r number from the indices list
-
-    for combination in list(comb):
-        new_stage = copy.deepcopy(current_stage)        # create a copy of current_stage in new stage
-
-        for index in combination:
-            new_stage.positions[index] = inverter(new_stage.positions[index])     # invert the bits of new stage and store it in new state list
-       
-        neighbor_list.append(new_stage)
+    comb = combinations(indices,r) 
     
+    for combination in list(comb):
+        new_state = copy.deepcopy(node) # create a copy as new_state
+       
+        for index in combination:
+            new_state.positions[index] = invert(new_state.positions[index])   #invert the bit at given index
+        neighbor_list.append(new_state)
+   
     return neighbor_list
 
-
-def Not_Visited(stage,explored,open):
+def Not_Visited(state,explored,open):
     
-    for i in explored:          # check in explored list 
-        if i.positions == stage.positions:  #if present in explored list then return false
-            return False
-
-    for i in open:              # check in open list
-        if i.positions == stage.positions:     #if present in open list then return false
-            return False
-
-    return True                 # return true if not visited
-
-
-def Not_Visited_tabu(stage,explored):
-    
-    for i in explored:
-        if i.positions == stage.positions:
-            return False
+    for i in explored:     #checking in explored list
         
-    return True
+        if i.positions == state.positions:     #if positons of i and state match return 0
+            return 0
 
+    for i in open:         #checking in open list
+       
+        if i.positions == state.positions:      #if positions of i and state match return 0
+            return 0
+    
+    return 1 # return true if not visited
 
-def Path_Tracker(path,stage):
+def Not_Visited_Tabu(state,explored):
+    for i in explored:# check in explored
+        if i.positions == state.positions:
+            return 0
+    return 1
 
-    path.append(stage.positions)
-    if path.parent == None:
+def Path_Track(path,state):
+    
+    path.append(state.positions)
+    
+    if state.parent == None:            #if the state has no parent state
         return
     else:
-        Path_Tracker(path,stage.parent)     #recursive call to Path Tracker function to get the path
+        Path_Track(path,state.parent)# recursively find path
 
 
+def Not_Explored(state,explored):
+    
+    for i in explored:          #check in explored list 
+        if i.positions == state.positions:     #if postions of i is equal to positions of state then return 0
+            return 0
+   
+    return 1
 
+#VND function 
 
+def VND(initial_state):
+   
+    initial_state.heuristic = heuristic_calc(initial_state)# calculate heuristic
+    next_state=[initial_state]
+   
+    local_maxima = 0
+    r = 1 
+    
+    while 1:
+       
+        current_state = next_state[-1]
+        
+        if Goal_Test(current_state):  #check if current_state is the goal state
+            path=[]
+            Path_Track(path,current_state)
+            output.write("States in path are: "+str(len(path))+"\n")
+            output.write("Explored states are: "+str(len(next_state))+"\n")
+            for i in reversed(path):
+                output.write(str(i)+"\n")
+            return 1
+        max = current_state
+        
+        for neighbor in Move_Gen(current_state,r):  # find neighbors of current state
+            neighbor.parent = current_state  #now assign value of current state to parent of neighbor
+            neighbor.heuristic = heuristic_calc(neighbor)
+            if neighbor.heuristic > max.heuristic:
+                max = neighbor
+        
+        if Not_Explored(max,next_state):
+            next_state.append(max) 
+        
+        if max == current_state:
+            r = min(4,r+1)   #take minimum of 4 and r+1
+    return 0
 
-# Main Function / driver code
+#BEAM function
 
-literals = 4     #here literals is no. of literals or n as given in question
-clause = 5     #clause is the no. of clause or 'k' as given in question
-
-possibilities = ['a','~a','b','~b','c','~c','d','~d']
-combination = []
-formula = []
-for i in range(clause):
-    reject = 1
-    while(reject):
-        RandomClause=[random.choice(possibilities) for j in range(3)]  #generate random clause
-
-        if (not tautology(RandomClause)) and (not repetition(RandomClause) and (len(set(RandomClause)) == len(RandomClause))):   # check if it is allowed
-            reject = 0
+def BEAM(initial_state,width):
+    
+    initial_state.heuristic = heuristic_calc(initial_state)
+    open = [initial_state] # initial open list with initial state
+    explored = []
+    
+    while open:
+        temp = []
+        
+        for node in open: #explored width number of node in open
+            explored.append(node)
             
-    formula.append(RandomClause)
-#create a file to store the formula which is generated randomly
+            if Goal_Test(node): # check for goal state
+                
+                path = []
+                Path_Track(path,node)
+                output.write("States in path are: "+str(len(path))+"\n")
+                output.write("Explored states are: "+str(len(explored))+"\n")
+                
+                for i in reversed(path):
+                    output.write(str(i)+"\n")
+                return 1
+            
+            neighbors = Move_Gen(node,1) # get neighbor, r = 1 (perturb only 1 bit)
+            
+            for neighbor in neighbors:
+                
+                if Not_Visited(neighbor,explored,open): # if not explored
+                    neighbor.heuristic = heuristic_calc(neighbor)
+                    neighbor.parent = node
+                    temp.append(neighbor) # store all neighbor in temp
+        
+        current = open[0]
+        open.clear()
+        open = open + temp  #append temp to open
+        open.sort(key = operator.attrgetter('heuristic'),reverse=True) #  then sort the list using heuristic value
+        
+        open = open[:width] # keep only width number of nodes
+       
+        if len(open)==0: # boundary case when width is zero
+            output.write("0 width")
+            return 0
+       
+        if current.heuristic >= open[0].heuristic: # when stuck in local maxima
+            path = []
+            Path_Track(path,current)
+            output.write("States in path are: "+str(len(path))+"\n")
+            output.write("Explored states are:  "+str(len(explored))+"\n")
+            
+            for i in reversed(path):
+                output.write(str(i)+"\n")
+            output.write("State is stuck in local maxima")
+            
+            return 0
+    return 0
 
-file1 = open("formula_1.txt","w")
+#TABU function
 
-for clause in formula:
-    file1.write(str(clause)+"\n")   #writing the randomly generated formula in file
+def TABU(initial_state,tt):
+   
+    initial_state.heuristic = heuristic_calc(initial_state)
+    
+    initial_state.storage = [0,0,0,0] # initialize the memory vector
+    
+    next = initial_state # start the next state as initial state
+    explored = []
+   
+    while 1:
+        explored.append(next)
+       
+        if Goal_Test(next): # check for goal state
+            path = []
+            Path_Track(path,next) # get path
+            output.write("States in path are: "+str(len(path))+"\n")
+            output.write("Explored states are: "+str(len(explored))+"\n")
+    
+            for i in reversed(path):
+                output.write(str(i)+"\n")
+            return 1
+    
+        current = next
+        max = 0
+        neighbors = Move_Gen(current,1,tt) 
+       
+        for n in neighbors:
+            if Not_Visited_Tabu(n,explored):
+                n.parent = current
+                n.heuristic = heuristic_calc(n)
+                if n.heuristic >= max: 
+                    max = n.heuristic
+                    next = n
+        
+        if not neighbors: 
+            
+            path = []
+            Path_Track(path,next)
+            output.write("States in path are: "+str(len(path))+"\n")
+            output.write("Explored states are: "+str(len(explored))+"\n")
+            
+            for i in reversed(path):
+                output.write(str(i)+"\n")
+            
+            output.write("Reduce the tt value")
+            return 0
+    
+    return 0
+
+
+literals = 4
+clauses = 5
+possibilities = ['a','~a','b','~b','c','~c','d','~d']
+formulas = []
+
+for clause in range(clauses):
+    rejected = True
+    while(rejected):
+        random_clause = [random.choice(possibilities) for i in range(3)] 
+        
+        if (not tautology(random_clause)) and (not repetition(random_clause) and (len(set(random_clause)) == len(random_clause))): 
+            rejected = False
+    
+    formulas.append(random_clause)
+
+formula_file = open("formula.txt","w")
+
+for clause in formulas:
+    formula_file.write(str(clause)+'\n')
+
 
 output = open("output.txt","w+")
 
-start_stage = Stage([0,0,0,0])   #initializing the initial / start state
+start_stage = Stage([0,0,0,0]) #initializing the initial / start state
 
 file_code = int(sys.argv[1])
-if file_code == 0:
-   # VND(start_stage)
 
-elif file_code == 1:
-   # BEAM(start_stage) 
+if file_code == 0:
+    VND(start_stage)
+
+elif file_code== 1:
+    TABU(start_stage,2)         # second argument is beam width
 
 elif file_code == 2:
+    BEAM(start_stage,2)     # second argument is tt value
