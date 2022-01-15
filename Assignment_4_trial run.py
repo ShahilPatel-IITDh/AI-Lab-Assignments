@@ -3,6 +3,7 @@ import copy
 import random
 import time
 from typing import Iterator
+import math
 
 class City:
     def __init__(self,X,Y,distance = None):
@@ -15,7 +16,7 @@ def MoveGen(current_tour,N,city_list,pheromone,alpha,beta):
     
     allowed_moves = [i for i in range(N) if i not in current_tour]
     valid_pheromone = [math.pow(pheromone[current_tour[-1]][allowed_moves[i]],alpha) for i in range(len(allowed_moves))]
-    valid_distances = [math.pow((1 / cities[curr_tour[-1]].distance[i]),beta) for i in allowed_moves]
+    valid_distances = [math.pow((1 / city_list[current_tour[-1]].distance[i]),beta) for i in allowed_moves]
     valid_product = [valid_pheromone[i] * valid_distances[i] for i in range(len(allowed_moves))]
     valid_prob = [valid_product[i] / sum(valid_product) for i in range(len(allowed_moves))]
     
