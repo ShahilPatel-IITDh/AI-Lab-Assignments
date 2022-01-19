@@ -1,130 +1,170 @@
 import sys
-import copy
 import random
+import copy
 import time
-from typing import Iterator
 import math
 
-class City:
-    def __init__(self,X,Y,distance = None):
-        self.X = X
-        self.Y = Y
-        self.distance = distance
 
+#Class for objects for Ant Colony
 
-def MoveGen(current_tour,N,city_list,pheromone,alpha,beta):
-    
-    allowed_moves = [i for i in range(N) if i not in current_tour]
-    valid_pheromone = [math.pow(pheromone[current_tour[-1]][allowed_moves[i]],alpha) for i in range(len(allowed_moves))]
-    valid_distances = [math.pow((1 / city_list[current_tour[-1]].distance[i]),beta) for i in allowed_moves]
-    valid_product = [valid_pheromone[i] * valid_distances[i] for i in range(len(allowed_moves))]
-    valid_prob = [valid_product[i] / sum(valid_product) for i in range(len(allowed_moves))]
-    
-    a = random.random()
-    i = 0
-    s = valid_prob[0]
-    
-    while True:
-        if s > a:
-            return allowed_moves[i]
-        i += 1
-        s += valid_prob[i]
+class Ant_Colony(object):
 
+    def __init__(self, Distances, Num_Of_Ants, Max_It, alpha, beta, rho, Q):
 
+        self.Distances = Distances
+        self.Num_Of_Ants = Num_Of_Ants
+        self.Max_It = Max_It
+       
+# Initializing  the parameters       
 
-def TourTrack(N, city_list, maxIteration,pheromone,Ants,alpha,beta,q,rho):
-    
-    minimum = -1       #initializing a variable to store the minimum value
-    optimal_tour = [j for j in range(N)]        #initialize the tour which is optimal
-    iteration = 0
+        self.Q = Q
+        self.alpha = alpha
+        self.beta = beta
+        self.rho = rho
+        self.Best = int(0.1*(N_Of_Cities)+1)
 
-    while time.time() < start + 298 and iteration < maxIteration:
-        next_pheromone = copy.deepcopy(pheromone)
-        for i in range (Ants):
-            current_tour = []
-            current_tour.append(0)
+#Parameters assignment here ph = pheromones of Ant Colony Algorithm
 
-            while len(current_tour) != N:         #Loop to check whther every city is visited atleast nce or not
-                current_tour.append(MoveGen(current_tour,N,city_list,pheromone,alpha,beta))
+        self.ph = [[0.1 for city in range(N_Of_Cities)] for selectedcity in range(N_Of_Cities)]
 
-            cost = 0     #initialize a variable to store the value of cost for travelling cities
-
-            for i in range (len(current_tour)-1):
-                cost += city_list[current_tour[i]].distance[current_tour[i+1]]
-            
-            if minimum == -1:
-
-                minimum = cost
-                optimal_tour = current_tour
-            
-            elif minimum > cost: #update best tour if current tour has less cost
-             
-                minimum = cost
-                optimal_tour = current_tour
+#Now assign Optimal Cost and Tour Variables
         
-        s = current_tour
-        cost = 0
-       
-        for i in range(len(current_tour) - 1):            # calculate cost of current tour
-            cost += city_list[current_tour[i]].distance[current_tour[i+1]]
-       
-        for i in range(len(current_tour) - 1):          # update next pheromone
+        self.Optimal_Cost = float('inf')
+        self.Optimal_Tour = range(N_Of_Cities)
+
+#Function for optimization
+
+    def Optimization(self):
+
+        while (time.time()-start_time) < 298:          #Loop till current time - start time is less than 298
+
+            Ant_List = []         #List for Ant
+
+#phDelta is (0 for x in range(NumOfCities) and 0 for y in range (NumOfCities))
+            
+            phDelta = [[0 for x in range(N_Of_Cities)] for y in range(N_Of_Cities)]
+
+#loop for j in range of Num of Ants in self object
+            for j in range(self.Num_Of_Ants):
+
+                ant = Ant(self.Distances, self.ph, self.alpha, self.beta)
+
+#append ant in the list of Ant
+                Ant_List.append(ant)
+
+#run this condition if the current tour cost is less then the optimal cost
+                if ant.Tour_Cost(self.Distances) < self.Optimal_Cost:
+
+#if current tour cost is less then optimal cost than update the optimal cost to the current tour cost
+                    
+                    self.Optimal_Cost = ant.Tour_Cost(self.Distances)
+                    self.Optimal_Tour = ant.Current_Tour           #Now as the current tour cost is less than optimal cost, the current tour can be considered as optimal tour
+                    self.lastChange = time.time()       #store the time stamp as last change
+                    
+
+                    #print the outputs
+
+                    print("The length of Tour is = ", self.Optimal_Cost, sep=' ')
+                    print(*self.Optimal_Tour, sep=' ')
+                    print("--------------------------------------------------------------------------------------------------------------------------------------------------------\n")
+
+#Sort the ant_list 
+            Ant_List.sort(key=lambda city: city.Tour_Cost(self.Distances))
+            
+            for KiDi in Ant_List[:self.Best]:
+                for i, v in enumerate(KiDi.Current_Tour):       #Vaue returned by enumerate class for current tour in KiDi variable
+                
+                    nextOne = KiDi.Current_Tour[(i+1)%N_Of_Cities]
+                    phDelta[v][nextOne] += self.Q/Distances[v][nextOne]
+
+    #Calculate the value of self.ph at given i and j indices        
+            for i in range(N_Of_Cities):
+               
+                for j in range(N_Of_Cities):
+                    
+                    self.ph[i][j] = (1-self.rho)*self.ph[i][j] + phDelta[i][j]
+
+            if (time.time()-self.lastChange) > 300:    #if the time limit exceeds the limit of 300s, then break the loop
+                break
+
+# Ant class structure defined
+
+class Ant(object):
+
+    def __init__(self, Distances, pheromones, alpha, beta):
+        
+        self.Current_Tour = []
+        self.Track_Path(Distances, pheromones, alpha, beta)
+
+
+# Track the Path for the tour
+
+    def Track_Path(self, Distances, pheromones, alpha, beta):
+
+#Start the tour, initialize a variable randomly in range of [0,N-1]
+
+        starter = random.randint(0, N_Of_Cities-1)    #Random integer in range of 0 to number of cities - 1
+        City_Validity = list(range(0, N_Of_Cities))
+        City_Validity.remove(starter)
+
+        self.Current_Tour.append(starter)
+        while(len(self.Current_Tour) < N_Of_Cities):
+
+            Last_City = self.Current_Tour[-1]      #it is the last city which was visited in the current tour
+
+            #Now find the probability to go to a particular city, we use pow function from 'math' library
+
+            probability = [math.pow((pheromones[Last_City][nextPossibleCity]),alpha) *(math.pow((1/Distances[Last_City][nextPossibleCity]),beta)) for nextPossibleCity in City_Validity]
+
+            probSet = [x/sum(probability) for x in probability]
+
+            Next_City = random.choices(City_Validity, weights=probSet)[0]    #choose the next city using random functin, but using the probability detector
+            self.Current_Tour.append(Next_City)    #Add the Next City to list of current tour
+            City_Validity.remove(Next_City)
+
+    # Function to calculate the cost of current tour
+    
+    def Tour_Cost(self, Distances):
+        
+        cost = 0     #initialize a variable to sum up the cost of current tour
+        for i in range(len(self.Current_Tour)):
            
-            next_pheromone[current_tour[i]][current_tour[i + 1]] *= rho
-            next_pheromone[current_tour[i]][current_tour[i + 1]] += q / cost
-            next_pheromone[current_tour[i + 1]][current_tour[i]] *= rho
-            next_pheromone[current_tour[i + 1]][current_tour[i]] += q / cost
+           cost += Distances[self.Current_Tour[i]][self.Current_Tour[(i+1) % N_Of_Cities]]
         
-        pheromone = next_pheromone
+        return cost
 
-        cost = 0
 
-        for i in range(len(optimal_tour)-1):
-            cost += city_list[optimal_tour[i]].distance[optimal_tour[i+1]]
+
+if __name__ == '__main__':
+
+    start_time = time.time()
+    file = open(sys.argv[1], "r").readlines()
+    isEuclidean = 0       #variable to check whether the file contains euclidean distances, if 0 then non-euclidean , if 1 then euclidean
+
+#Check whether the first line of file is euclidean or non-euclidean
+
+    if(file[0] == "euclidean"):
+        isEuclidean = 1
+
+    N_Of_Cities = int(file[1])     #the 2nd line of input file contains the number of cities
+
+    City_Coordinates = []    #list to store the coordinates of cities
+    Distances = []             #list t store the distaces between the cities
+    rlist = []
+    for i in range(N_Of_Cities):
         
-        #print the output
+        c = [float(x) for x in file[i+2].strip().split(' ')]
+        City_Coordinates.append(c)
 
-        print("The optimal cost found is =", cost, sep=' ')
-        print(*optimal_tour, sep=' '"\n")
+        d = [float(x) for x in file[N_Of_Cities+2+i].strip().split(' ')]
+        Distances.append(d)
 
-        iteration += 1
-    return optimal_tour
-
-
-start = time.time()
-
-#input part
-file = open(sys.argv[1],"r")
-euclidean_check = file.readline().strip()   #check the first line of file for whether the given distances are euclidean are non-euclidean
-
-isEuclidean = 0
-
-if(euclidean_check == "euclidean"):
-    isEuclidean = 1
-
-
-N = int(file.readline().strip())   #variable to store the number of cities as given in input file
+    #Check if the isEuclidean is true or false and run the algorithm accordingly
     
-city_list = []   #list to store the coordinates 
-
-#input the coordinates of cities given in space separated form 
-for j in range(N):
-    x_coordinate,y_coordinate = file.readline().strip().split()
-    coordinates = City(float(x_coordinate),float(y_coordinate))
-    city_list.append(city_list)
-
-for i in city_list:
-
-    i.distance = list(map(float,file.readline().split()))
-
-initial_pheromone_matrix = [[1 / (N**2) for j in range(N)] for i in range(N)]
-
-#Main Function / Driver Code
-if (isEuclidean == 1):
-    #SomeFunction to allow the passage of the salesman
-    tour = TourTrack(N, city_list, maxIterations = 200, pheromone=initial_pheromone_matrix, ants=100,alpha = 3.0, beta = 3.0, q = 0.1, rho = 0.1)
-
-
-else: 
-    #some function for non-euclidean part
-    tour = TourTrack(N, city_list, maxIterations=300,pheromone=initial_pheromone_matrix, ants=100, alpha=5, beta=5, q=0.05, rho=0.05)
+    if (isEuclidean == 1):
+        Tour = Ant_Colony(Distances, Num_Of_Ants=int(N_Of_Cities), Max_It = 200, alpha = 3, beta = 3, rho = 0.1, Q = 0.1)
+    
+    else:
+        Tour = Ant_Colony(Distances, Num_Of_Ants=int(N_Of_Cities), Max_It = 300, alpha = 5 , beta = 5, rho = 0.05, Q = 0.05)
+                                                                                    
+    Tour.Optimization()
