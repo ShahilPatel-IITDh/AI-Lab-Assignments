@@ -5,6 +5,8 @@
 * Template for users to create their own bots
 */
 
+#Minimax Algorithm
+
 #include <chrono>
 #include "Othello.h"
 #include "OthelloPlayer.h"
